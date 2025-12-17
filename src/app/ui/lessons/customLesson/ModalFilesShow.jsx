@@ -1,7 +1,6 @@
 export function ModalFilesShow({ files }) {
     const downloadOrOpen = (url, name) => {
         const isImage = /\.(png|jpg|jpeg|gif|webp|svg)$/i.test(name);
-
         if (isImage) {
             // Отваря се в нов таб
             window.open(url, "_blank", "noopener,noreferrer");

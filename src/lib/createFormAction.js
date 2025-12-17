@@ -1,12 +1,13 @@
 import { supabase } from "@/lib/supabaseClient";
 import { TABLES, BUCKETS } from "@/utils/constants";
+import { transliterateBulgarian } from "@/utils/translateBulgarian";
 
 export async function createLesson({ grade, title, content, files, userId }) {
     try {
         const fileUrls = [];
 
         for (const file of files) {
-            const fileName = `${Date.now()}_${file.name}`;
+            const fileName = `${Date.now()}_${transliterateBulgarian(file.name).toLocaleLowerCase("bg-BG")}`;
 
             const { error: uploadError } = await supabase
                 .storage
