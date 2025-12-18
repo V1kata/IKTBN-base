@@ -1,13 +1,14 @@
 import { ModalFilesShow } from "@/app/ui/lessons/customLesson/ModalFilesShow";
+import { parseFile } from "@/utils/fileUtils";
 
 export function FileModal({ title, isOpen, onClose, files }) {
     if (!isOpen) return null;
 
     // Подготвяме данните за ModalFilesShow в единен формат
-    const formattedFiles = files.map(f => ({
-        name: getFileName(f),
-        url: f
-    }));
+    const formattedFiles = (files || []).map(f => {
+        const p = parseFile(f);
+        return { name: p.name, url: p.url };
+    });
 
     return (
         <div

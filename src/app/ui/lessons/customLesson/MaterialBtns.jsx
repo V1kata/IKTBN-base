@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { FileModal } from "@/app/ui/lessons/customLesson/FireModal";
+import { parseFile } from "@/utils/fileUtils";
 
 export function MaterialBtns({ lesson }) {
     const [openMoreFiles, setOpenMoreFiles] = useState(false);
@@ -9,8 +10,9 @@ export function MaterialBtns({ lesson }) {
     const extra = [];
 
     if (lesson.files)
-        for (const f of lesson.files) {
-            (f.endsWith(".pptx") ? presentations : extra).push(f);
+        for (const fRaw of lesson.files) {
+            const f = parseFile(fRaw);
+            (f.url?.toLowerCase().endsWith(".pptx") ? presentations : extra).push(f);
         }
 
     return (
@@ -21,8 +23,8 @@ export function MaterialBtns({ lesson }) {
                     presentations.length === 1 ? (
                         // Ако е само 1 презентация -> директен линк
                         <a
-                            href={presentations[0]}
-                            download
+                            href={presentations[0].url}
+                            download={presentations[0].name}
                             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2"
                         >
                             📘 Презентация

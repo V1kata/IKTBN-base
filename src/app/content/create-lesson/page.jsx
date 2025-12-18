@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import LessonFormComponent from "@/app/ui/createForm/LessonFormComponent";
 import { createLesson } from "@/lib/createFormAction";
 import { useUser } from "@/app/context/UserContext";
-import { transliterateBulgarian } from "@/utils/translateBulgarian";
 import AuthGuard from "@/app/ui/middlewares/AuthGuard";
 
 export default function LessonForm() {

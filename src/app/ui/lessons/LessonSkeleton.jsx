@@ -1,18 +1,82 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { MaterialBtns } from "./customLesson/MaterialBtns";
 import { useUser } from "@/app/context/UserContext";
-import { deleteLesson } from "@/lib/lessonRequests";
+import { deleteLesson, updateLesson } from "@/lib/lessonRequests";
+
+import LessonHeader from "@/app/ui/lessons/LessonHeader";
+import LessonContent from "@/app/ui/lessons/LessonContent";
+import LessonFilesEditor from "@/app/ui/lessons/LessonFilesEditor";
+import LessonActions from "@/app/ui/lessons/LessonActions";
 
 export function LessonSkeleton({ lesson }) {
     const { userData } = useUser();
     const router = useRouter();
     const [deleting, setDeleting] = useState(false);
 
-    const handleEditClick = () => {
-        alert("Функционал за редактиране ще бъде добавен скоро!");
+    const [editing, setEditing] = useState(false);
+    const [editTitle, setEditTitle] = useState(lesson.title || "");
+    const [editContent, setEditContent] = useState(lesson.content || "");
+    const [saving, setSaving] = useState(false);
+
+    // File management
+    const [newFiles, setNewFiles] = useState([]); // File objects to upload
+    const [removedFiles, setRemovedFiles] = useState([]); // storageKeys to remove
+
+    // local copy to show updated values without requiring parent refresh
+    const [localLesson, setLocalLesson] = useState(lesson);
+
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+
+    const handleStartEdit = () => {
+        setEditTitle(localLesson.title || "");
+        setEditContent(localLesson.content || "");
+        setEditing(true);
+    };
+
+    const handleCancelEdit = () => {
+        setEditing(false);
+        setEditTitle("");
+        setEditContent("");
+    };
+
+    const handleSaveEdit = async () => {
+        if (saving) return;
+        if (!editTitle) {
+            alert('Моля, въведете заглавие.');
+            return;
+        }
+
+        try {
+            setSaving(true);
+            const res = await updateLesson(localLesson.id, userData.id, {
+                title: editTitle,
+                content: editContent,
+            }, {
+                filesToAdd: newFiles,
+                filesToRemove: removedFiles,
+            });
+
+            if (!res.success) {
+                console.error('Update error:', res.error);
+                alert('Възникна грешка при запазване.');
+                setSaving(false);
+                return;
+            }
+
+            setLocalLesson(res.data);
+            setNewFiles([]);
+            setRemovedFiles([]);
+            setEditing(false);
+        } catch (err) {
+            console.error(err);
+            alert('Възникна грешка при запазване.');
+        } finally {
+            setSaving(false);
+        }
     };
 
     const handleDelete = async () => {
@@ -21,7 +85,7 @@ export function LessonSkeleton({ lesson }) {
         if (!confirmed) return;
         try {
             setDeleting(true);
-            const res = await deleteLesson(lesson.id, userData.id);
+            const res = await deleteLesson(localLesson.id, userData.id);
             if (!res.success) {
                 console.error('Delete error:', res.error);
                 alert('Възникна грешка при изтриване.');
@@ -29,7 +93,7 @@ export function LessonSkeleton({ lesson }) {
                 return;
             }
             // redirect to grade page
-            router.push(`/content/class/${lesson.grade}`);
+            router.push(`/content/class/${localLesson.grade}`);
         } catch (err) {
             console.error(err);
             alert('Възникна грешка при изтриване.');
@@ -40,30 +104,47 @@ export function LessonSkeleton({ lesson }) {
 
     return (
         <article className="max-w-4xl mx-auto py-10">
-            <Link href={`/content/class/${lesson.grade}`} className="text-red-600 hover:underline">
-                ← Назад към {lesson.grade} клас
-            </Link>
+            <LessonHeader
+                grade={localLesson.grade}
+                title={localLesson.title}
+                editing={editing}
+                editTitle={editTitle}
+                setEditTitle={setEditTitle}
+            />
 
-            <h1 className="text-3xl font-bold mt-4 mb-6">{lesson.title}</h1>
-            <p className="text-lg leading-relaxed text-gray-700 whitespace-pre-line mb-8">
-                {lesson.content}
-            </p>
+            <LessonContent
+                editing={editing}
+                content={localLesson.content}
+                editContent={editContent}
+                setEditContent={setEditContent}
+            />
+
+            {editing && (
+                <div className="mb-6">
+                    <LessonFilesEditor
+                        files={localLesson.files}
+                        newFiles={newFiles}
+                        setNewFiles={setNewFiles}
+                        removedFiles={removedFiles}
+                        setRemovedFiles={setRemovedFiles}
+                        setLocalLesson={setLocalLesson}
+                    />
+                </div>
+            )}
 
             <div className="flex gap-4">
-                <MaterialBtns lesson={lesson} />
-                {userData?.id == lesson.teacherId && (
-                    <>
-                        <button
-                            className="text-white px-4 py-2 rounded-lg hover:bg-green-700 transition flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600"
-                            onClick={handleEditClick}
-                        >Редактирай урока</button>
-                        <button
-                            className="text-white px-4 py-2 rounded-lg hover:bg-green-700 transition flex items-center gap-2 bg-red-500 hover:bg-red-600 disabled:opacity-50"
-                            onClick={handleDelete}
-                            disabled={deleting}
-                        >{deleting ? 'Изтриване...' : 'Изтрий урока'}</button>
-                    </>
-                )}
+                <MaterialBtns lesson={localLesson} />
+                <LessonActions
+                    mounted={mounted}
+                    isOwner={userData?.id == localLesson.teacherId}
+                    editing={editing}
+                    onStartEdit={handleStartEdit}
+                    onCancelEdit={handleCancelEdit}
+                    onSaveEdit={handleSaveEdit}
+                    saving={saving}
+                    deleting={deleting}
+                    onDelete={handleDelete}
+                />
             </div>
 
         </article>
