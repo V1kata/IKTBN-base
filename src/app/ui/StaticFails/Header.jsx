@@ -11,7 +11,16 @@ import { navLinks } from "@/utils/navLinks";
 
 export function Header() {
   const { userData } = useUser();
-  const role = userData?.role || "unloged";
+  let role = userData?.role;
+  if (!role && typeof window !== "undefined") {
+    try {
+      const stored = JSON.parse(localStorage.getItem("user") || "null");
+      role = stored?.role;
+    } catch (e) {
+      role = null;
+    }
+  }
+  role = role || "unloged";
 
   const [menuOpen, setMenuOpen] = useState(false);
   const toggleMenu = () => setMenuOpen(!menuOpen);

@@ -3,6 +3,7 @@
 import { requestTeacher } from "@/lib/clientRequests";
 import { useRouter } from "next/navigation";
 import { Mail, Send } from "lucide-react";
+import AuthGuard from "@/app/ui/middlewares/AuthGuard";
 
 export default function InvitePage() {
   const router = useRouter();
@@ -16,10 +17,11 @@ export default function InvitePage() {
   }
 
   return (
-    <form
-      onSubmit={inviteTeacher}
-      className="max-w-md mx-auto bg-white p-6 rounded-2xl shadow-lg flex flex-col gap-5"
-    >
+    <AuthGuard access="unloged">
+      <form
+        onSubmit={inviteTeacher}
+        className="max-w-md mx-auto bg-white p-6 rounded-2xl shadow-lg flex flex-col gap-5"
+      >
       <label className="flex flex-col text-gray-700 font-medium">
         <span>Email на учител</span>
         <div className="relative">
@@ -44,6 +46,7 @@ export default function InvitePage() {
         <Send size={18} />
         Покани учител
       </button>
-    </form>
+      </form>
+    </AuthGuard>
   );
 }

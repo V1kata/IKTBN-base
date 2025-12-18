@@ -6,6 +6,7 @@ import LessonFormComponent from "@/app/ui/createForm/LessonFormComponent";
 import { createLesson } from "@/lib/createFormAction";
 import { useUser } from "@/app/context/UserContext";
 import { transliterateBulgarian } from "@/utils/translateBulgarian";
+import AuthGuard from "@/app/ui/middlewares/AuthGuard";
 
 export default function LessonForm() {
     const router = useRouter();
@@ -52,11 +53,13 @@ export default function LessonForm() {
     };
 
     return (
-        <LessonFormComponent
-            lessonData={lessonData}
-            setLessonData={setLessonData}
-            handleSubmit={handleSubmit}
-            loading={loading}
-        />
+        <AuthGuard access="teacher">
+            <LessonFormComponent
+                lessonData={lessonData}
+                setLessonData={setLessonData}
+                handleSubmit={handleSubmit}
+                loading={loading}
+            />
+        </AuthGuard>
     );
 }
