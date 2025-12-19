@@ -16,6 +16,7 @@ export default function LessonForm() {
         title: "",
         content: "",
         files: [],
+        isPublic: true,
     });
 
     const [loading, setLoading] = useState(false);

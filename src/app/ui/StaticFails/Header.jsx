@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { useUser } from "@/app/context/UserContext";
@@ -27,6 +27,10 @@ export function Header() {
 
   const visibleLinks = navLinks.filter(link => canAccess(role, link.access));
 
+  // Avoid rendering user-dependent nav links during SSR to prevent hydration mismatch
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   return (
     <header className="bg-white shadow-md sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -37,7 +41,7 @@ export function Header() {
         </Link>
 
         <nav className="hidden md:flex space-x-8 text-lg">
-          {visibleLinks.map(({ href, label, icon }) => (
+          {mounted && visibleLinks.map(({ href, label, icon }) => (
             <DesktopNavLink key={href} href={href} label={label} icon={icon} />
           ))}
         </nav>
@@ -51,7 +55,7 @@ export function Header() {
         </button>
       </div>
 
-      {menuOpen && (<MobileNav visibleLinks={visibleLinks} setMenuOpen={setMenuOpen}/>)}
+      {menuOpen && mounted && (<MobileNav visibleLinks={visibleLinks} setMenuOpen={setMenuOpen}/>)}
     </header>
   );
 }

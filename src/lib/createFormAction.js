@@ -2,7 +2,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { TABLES, BUCKETS } from "@/utils/constants";
 import { transliterateBulgarian } from "@/utils/translateBulgarian";
 
-export async function createLesson({ grade, title, content, files, userId }) {
+export async function createLesson({ grade, title, content, files, userId, isPublic = true }) {
     try {
         const fileUrls = [];
 
@@ -35,6 +35,7 @@ export async function createLesson({ grade, title, content, files, userId }) {
                     content,
                     files: fileUrls,
                     teacherId: userId,
+                    isPublic,
                 },
             ])
             .select()

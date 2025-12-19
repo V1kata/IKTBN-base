@@ -16,6 +16,18 @@ export function LessonSkeleton({ lesson }) {
     const router = useRouter();
     const [deleting, setDeleting] = useState(false);
 
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+
+    // Prevent non-owners from viewing private lessons (only after client mount to avoid hydration mismatch)
+    if (lesson?.isPublic === false && mounted && userData?.id !== lesson?.teacherId) {
+        return (
+            <div className="max-w-4xl mx-auto py-10 text-center">
+                <h2 className="text-xl font-semibold">Този урок е личен и не е достъпен.</h2>
+            </div>
+        );
+    }
+
     const [editing, setEditing] = useState(false);
     const [editTitle, setEditTitle] = useState(lesson.title || "");
     const [editContent, setEditContent] = useState(lesson.content || "");
@@ -28,12 +40,38 @@ export function LessonSkeleton({ lesson }) {
     // local copy to show updated values without requiring parent refresh
     const [localLesson, setLocalLesson] = useState(lesson);
 
-    const [mounted, setMounted] = useState(false);
-    useEffect(() => setMounted(true), []);
+    // Visibility toggle state for immediate owner updates
+    const [togglingVisibility, setTogglingVisibility] = useState(false);
+
+    // Pending visibility when editing (does not apply until save)
+    const [pendingIsPublic, setPendingIsPublic] = useState(null);
+
+    const handleSetVisibility = async (value) => {
+        if (togglingVisibility) return;
+        try {
+            setTogglingVisibility(true);
+            const res = await updateLesson(localLesson.id, userData.id, { isPublic: !!value }, { filesToAdd: [], filesToRemove: [] });
+            if (!res.success) {
+                console.error('Visibility update error:', res.error);
+                alert('Възникна грешка при промяна на видимостта.');
+                setTogglingVisibility(false);
+                return;
+            }
+            setLocalLesson(res.data);
+            // Keep pending editor visibility in sync if user is currently editing
+            if (editing) setPendingIsPublic(res.data.isPublic);
+        } catch (err) {
+            console.error(err);
+            alert('Възникна грешка при промяна на видимостта.');
+        } finally {
+            setTogglingVisibility(false);
+        }
+    };
 
     const handleStartEdit = () => {
         setEditTitle(localLesson.title || "");
         setEditContent(localLesson.content || "");
+        setPendingIsPublic(!!localLesson.isPublic);
         setEditing(true);
     };
 
@@ -41,6 +79,7 @@ export function LessonSkeleton({ lesson }) {
         setEditing(false);
         setEditTitle("");
         setEditContent("");
+        setPendingIsPublic(null);
     };
 
     const handleSaveEdit = async () => {
@@ -55,6 +94,7 @@ export function LessonSkeleton({ lesson }) {
             const res = await updateLesson(localLesson.id, userData.id, {
                 title: editTitle,
                 content: editContent,
+                isPublic: pendingIsPublic !== null ? !!pendingIsPublic : !!localLesson.isPublic,
             }, {
                 filesToAdd: newFiles,
                 filesToRemove: removedFiles,
@@ -71,6 +111,7 @@ export function LessonSkeleton({ lesson }) {
             setNewFiles([]);
             setRemovedFiles([]);
             setEditing(false);
+            setPendingIsPublic(null);
         } catch (err) {
             console.error(err);
             alert('Възникна грешка при запазване.');
@@ -129,10 +170,20 @@ export function LessonSkeleton({ lesson }) {
                         setRemovedFiles={setRemovedFiles}
                         setLocalLesson={setLocalLesson}
                     />
+
+                    <div className="mb-4">
+                        <button
+                            type="button"
+                            onClick={() => setPendingIsPublic(prev => prev === null ? !localLesson.isPublic : !prev)}
+                            className={`px-4 py-2 rounded-lg transition flex items-center gap-2 ${(pendingIsPublic ?? localLesson.isPublic) ? 'bg-green-600 text-white' : 'bg-gray-600 text-white'}`}
+                        >
+                            {(pendingIsPublic ?? localLesson.isPublic) ? 'Публичен урок (видим за всички)' : 'Личен урок (видим само за мен)'}
+                        </button>
+                    </div>
                 </div>
             )}
 
-            <div className="flex gap-4">
+            <div className="flex gap-4 items-center">
                 <MaterialBtns lesson={localLesson} />
                 <LessonActions
                     mounted={mounted}
@@ -145,6 +196,18 @@ export function LessonSkeleton({ lesson }) {
                     deleting={deleting}
                     onDelete={handleDelete}
                 />
+                {userData?.id == localLesson.teacherId && (
+                    <div className="flex items-center gap-3">
+                        <button
+                            type="button"
+                            onClick={() => handleSetVisibility(!localLesson.isPublic)}
+                            disabled={togglingVisibility}
+                            className={`px-4 py-2 rounded-lg transition flex items-center gap-2 ${localLesson.isPublic ? 'bg-green-600 text-white' : 'bg-gray-600 text-white'} ${togglingVisibility ? 'opacity-50 cursor-not-allowed' : 'hover:brightness-95'}`}
+                        >
+                            {localLesson.isPublic ? 'Публичен' : 'Личен'}
+                        </button>
+                    </div>
+                )}
             </div>
 
         </article>

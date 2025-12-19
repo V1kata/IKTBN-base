@@ -7,7 +7,8 @@ export async function getLessonsByGrade(grade) {
         const { data, error } = await supabase
             .from('lessons')
             .select('*')
-            .eq('grade', grade);
+            .eq('grade', grade)
+            .eq('isPublic', true);
 
         return data;
     } catch (err) {

@@ -6,8 +6,9 @@ import FileUploader from "@/app/ui/createForm/FileUploader";
 export default function LessonFormComponent({ lessonData, setLessonData, handleSubmit, loading }) {
 
     const handleChange = (e) => {
-        const { name, value } = e.target;
-        setLessonData((prev) => ({ ...prev, [name]: value }));
+        const { name, value, type, checked } = e.target;
+        const val = type === 'checkbox' ? checked : value;
+        setLessonData((prev) => ({ ...prev, [name]: val }));
     };
 
     return (
@@ -24,6 +25,18 @@ export default function LessonFormComponent({ lessonData, setLessonData, handleS
             <LessonContentTextarea lessonData={lessonData} handleChange={handleChange} />
 
             <FileUploader lessonData={lessonData} setLessonData={setLessonData} />
+
+            <div className="flex items-center gap-3">
+                <input
+                    id="isPublic"
+                    name="isPublic"
+                    type="checkbox"
+                    checked={!!lessonData.isPublic}
+                    onChange={handleChange}
+                    className="h-4 w-4"
+                />
+                <label htmlFor="isPublic" className="text-sm text-gray-700">Публичен урок (видим за всички)</label>
+            </div>
 
             <button
                 type="submit"
