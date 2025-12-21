@@ -54,8 +54,8 @@ export async function getCurrentUser(user_id) {
     try {
         const { data, error } = await supabase
             .from(TABLES.PROFILES)
-            .eq('id', user_id)
-            .select('*');
+            .select('*')
+            .eq('id', user_id);
 
         return data
     } catch (err) {
@@ -137,5 +137,35 @@ export async function acceptOrDeclineRequest(email, status) {
     } catch (err) {
         console.error('Unexpected error:', err);
         return { error: err };
+    }
+}
+
+export async function getMaps() {
+    try {
+        const { data, error } = await supabase
+            .from(TABLES.MAPS)
+            .select("*")
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        return data;
+    } catch (err) {
+        console.error('Error fetching maps:', err);
+        return [];
+    }
+}
+
+export async function deleteMap(id) {
+    try {
+        const { error } = await supabase
+            .from(TABLES.MAPS)
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+        return true;
+    } catch (err) {
+        console.error('Error deleting map:', err);
+        return false;
     }
 }
