@@ -39,7 +39,7 @@ export default function MapsPage() {
 
   const openModal = (map) => {
     setSelectedMap(map);
-    document.body.style.overflow = "hidden"; // Prevent scrolling when modal is open
+    document.body.style.overflow = "hidden";
   };
 
   const closeModal = () => {

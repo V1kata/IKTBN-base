@@ -169,3 +169,18 @@ export async function deleteMap(id) {
         return false;
     }
 }
+
+export async function deletePersonality(id) {
+    try {
+        const { error } = await supabase
+            .from(TABLES.HISTORICAL_FIGURES)
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+        return { success: true };
+    } catch (err) {
+        console.error('Error deleting personality:', err);
+        return { success: false, error: err.message };
+    }
+}
