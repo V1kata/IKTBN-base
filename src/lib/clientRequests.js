@@ -84,19 +84,64 @@ export async function logoutUser(setUserData) {
 }
 
 export async function finalizeUserSetup(password, userId) {
+    // Validate password
+    if (!password || password.length < 6) {
+        throw new Error("Паролата трябва да съдържа минимум 6 символа");
+    }
+
     const { error: updateError } = await supabase.auth.updateUser({ password });
     if (updateError) throw new Error(updateError.message);
 
     const { data: { user } } = await supabase.auth.getUser();
 
-    const { data, error: insertError } = await supabase.from(TABLES.PROFILES).insert({
-        id: userId,
-        email: user?.email || "",
-        role: ROLES.TEACHER,
-        lessons: []
-    }).select();
+    if (!user) {
+        throw new Error("Не е намерен активен потребител");
+    }
 
-    if (insertError) throw new Error(insertError.message);
+    // Try to insert, but if profile already exists, update it instead
+    let data, error;
+    
+    // First check if profile exists
+    const { data: existingProfile, error: checkError } = await supabase
+        .from(TABLES.PROFILES)
+        .select("*")
+        .eq("id", userId)
+        .single();
+
+    if (checkError && checkError.code !== "PGRST116") {
+        // PGRST116 means no rows found, which is expected
+        throw new Error(checkError.message);
+    }
+
+    if (existingProfile) {
+        // Profile exists, update it
+        const { data: updatedData, error: updateProfileError } = await supabase
+            .from(TABLES.PROFILES)
+            .update({
+                email: user.email,
+                role: ROLES.TEACHER,
+                lessons: existingProfile.lessons || []
+            })
+            .eq("id", userId)
+            .select();
+
+        if (updateProfileError) throw new Error(updateProfileError.message);
+        data = updatedData;
+    } else {
+        // Profile doesn't exist, insert it
+        const { data: insertedData, error: insertError } = await supabase
+            .from(TABLES.PROFILES)
+            .insert({
+                id: userId,
+                email: user.email,
+                role: ROLES.TEACHER,
+                lessons: []
+            })
+            .select();
+
+        if (insertError) throw new Error(insertError.message);
+        data = insertedData;
+    }
 
     return data[0];
 }
